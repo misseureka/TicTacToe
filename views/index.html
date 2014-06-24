@@ -1,0 +1,66 @@
+<!html5>
+<html>
+  <head>
+    <title>The tic-tac-toe</title>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/vader/jquery-ui.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+    <script src="javascripts/tictactoe.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+     board = {}; 
+        board.cellSize = 50;
+        board.cellsCountX = 20;
+        board.cellsCountY = 10;
+        board.width = 1 + (board.cellsCountX * board.cellSize);
+        board.height = 1 + (board.cellsCountY * board.cellSize);
+
+      board.fill = function(startX, endX, startY, endY)
+         {
+          board.canvasCtx.beginPath();
+          for (var x = startX; x < endX; x += board.cellSize )
+          {
+            board.canvasCtx.moveTo(x + 0.5,startY);
+            board.canvasCtx.lineTo(x + 0.5,endY);
+          }
+          for (var y = startY; y < endY; y += board.cellSize)
+          {
+            board.canvasCtx.moveTo(startX,y + 0.5);
+            board.canvasCtx.lineTo(endX,y + 0.5);
+          }
+          board.canvasCtx.stroke();
+         }
+
+      // board.getCursorPosition = function(e){
+      //   }
+
+      // board.onUserClick = function(e){
+      //   board.getCursorPosition(e);
+      // };
+
+      board.init = function(onMove)
+      {
+        this.canvas = document.getElementById("gameBoard");
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        this.canvasCtx = this.canvas.getContext('2d');
+        this.fill(0, this.width, 0, this.height);
+        this.canvas.addEventListener("click", onMove, false);
+      }
+    </script>
+  </head>
+  <body onload="TicTacToe.init();">
+    <table border="0" width="100%">
+        <thead>
+          <th colspan="2" id="status" class="ui-widget ui-state-hover ui-corner-all"></th>
+        </thead>
+        <tbody>
+          <td id="stats" class="ui-widget" valign="top"><br/>
+            <button id="reload">Новая игра</button><br /><br />
+          </td>
+              <canvas id="gameBoard" style="border:1px solid #000000;"></canvas>
+            </td>
+        </tbody>
+    </table>
+  </body>
+</html>
