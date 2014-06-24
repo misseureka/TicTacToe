@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+var debug = require('debug')('tic-tac');
+var app = require('../app');
+
+app.set('port', process.env.PORT || 3000);
+
+var server = app.listen(app.get('port'), function() {
+  debug('Express server listening on port ' + server.address().port);
+});
+
+var io = require('socket.io').listen(server);
+
+
+TicTacToe = require('../models/tictactoe');
+
+var countGames = 0, 
+	countPlayers = [], 
+	Game = new TicTacToe();
+
+io.sockets.on('connection', function (socket) {
+    console.log('%s: %s - connected', socket.id.toString(), socket.handshake.address.address);
+    if(countPlayers[socket.handshake.address.address] == undefined) countPlayers[socket.handshake.address.address] = true;
+
+    io.sockets.emit('stats', [
+        'Всего игр: ' + countGames,
+        'Уникальных игроков: ' + Object.keys(countPlayers).length,
+        'Сейчас игр: ' + Object.keys(Game.games).length,
+        'Сейчас игроков: ' + Object.keys(Game.users).length
+    ]);
+
+    function closeRoom(gameId, opponent) {
+        socket.leave(gameId);
+        io.sockets.socket(opponent).leave(gameId);
+        countGames--;
+    }
+
+    socket.on('start', function () {
+        if(Game.users[socket.id] !== undefined) return;
+        Game.start(socket.id.toString(), function(start, gameId, opponent){
+            if(start) {
+                Game.games[gameId].on('timeout', function(user) {
+                    Game.end(user, function(gameId, opponent, turn) {
+                        io.sockets.in(gameId).emit('timeout', turn);
+                        closeRoom(gameId, opponent);
+                    });
+                });
+
+                // Подключем к игре соперников в отдельную комнату
+                socket.join(gameId);
+                io.sockets.socket(opponent).join(gameId);
+                socket.emit('ready', gameId, 'X');
+                io.sockets.socket(opponent).emit('ready', gameId, 'O');
+                countGames++;
+            } else {
+                // ожидает аппонента
+                io.sockets.socket(socket.id).emit('wait');
+            }
+        });
+    });
+
+    socket.on('step', function (gameId, id) {
+        if(Game.games[gameId] === undefined) return;
+        // Парсим из ID элемента координаты XxY
+        var coordinates = id.split('_');
+        Game.step(gameId, parseInt(coordinates[0]), parseInt(coordinates[1]), socket.id.toString(), function(win, turn) {
+            io.sockets.in(gameId).emit('step', id, turn, win);
+            if(win) {
+                Game.end(socket.id.toString(), function(gameId, opponent){
+                    closeRoom(gameId, opponent);
+                });
+            }
+        });
+    });
+
+    socket.on('disconnect', function () {
+        // Если один из игроков отключился, посылаем об этом сообщение второму
+        // Отключаем обоих от игры и удаляем её, освобождаем память
+        Game.end(socket.id.toString(), function(gameId, opponent) {
+            io.sockets.socket(opponent).emit('exit');
+            closeRoom(gameId, opponent);
+        });
+        console.log('%s: %s - disconnected', socket.id.toString(), socket.handshake.address.address);
+    });
+});
