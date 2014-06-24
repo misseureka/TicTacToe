@@ -36,11 +36,7 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('start', function () {
         if(Game.users[socket.id] !== undefined) return;
-<<<<<<< HEAD
         Game.start(socket.id.toString(), function(start, gameId, opponent){
-=======
-        Game.start(socket.id.toString(), function(start, gameId, opponent, x, y){
->>>>>>> 7de0621496cc205885825198a758cf60a9049b79
             if(start) {
                 Game.games[gameId].on('timeout', function(user) {
                     Game.end(user, function(gameId, opponent, turn) {
@@ -52,13 +48,8 @@ io.sockets.on('connection', function (socket) {
                 // Подключем к игре соперников в отдельную комнату
                 socket.join(gameId);
                 io.sockets.socket(opponent).join(gameId);
-<<<<<<< HEAD
                 socket.emit('ready', gameId, 'X');
                 io.sockets.socket(opponent).emit('ready', gameId, 'O');
-=======
-                socket.emit('ready', gameId, 'X', x, y);
-                io.sockets.socket(opponent).emit('ready', gameId, 'O', x, y);
->>>>>>> 7de0621496cc205885825198a758cf60a9049b79
                 countGames++;
             } else {
                 // ожидает аппонента
@@ -70,11 +61,7 @@ io.sockets.on('connection', function (socket) {
     socket.on('step', function (gameId, id) {
         if(Game.games[gameId] === undefined) return;
         // Парсим из ID элемента координаты XxY
-<<<<<<< HEAD
         var coordinates = id.split('_');
-=======
-        var coordinates = id.split('x');
->>>>>>> 7de0621496cc205885825198a758cf60a9049b79
         Game.step(gameId, parseInt(coordinates[0]), parseInt(coordinates[1]), socket.id.toString(), function(win, turn) {
             io.sockets.in(gameId).emit('step', id, turn, win);
             if(win) {
